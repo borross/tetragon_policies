@@ -1,0 +1,64 @@
+# Tracing: success creation (return code (matchReturnArgs) = 0) of files in critical Linux dirs (from AuditD config Neo23x0 + KUMA Community)
+
+# The fd_install kernel function is called each time a file descriptor must be installed into the file descriptor table of a process, typically referenced within system calls like open or openat. It is a good place for tracking file descriptor and filename matching.
+
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: "file-create-open-dirs"
+spec:
+  kprobes:
+  - call: "fd_install"
+    syscall: false
+    args:
+    - index: 0
+      type: int
+    - index: 1
+      type: "file"
+    selectors:
+    - matchArgs:
+      - index: 1
+        operator: "Prefix"
+        values:
+        - "/etc/apt/apt.conf.d/" # noisy
+        - "/etc/cron.d/"
+        - "/etc/cron.daily/"
+        - "/etc/cron.hourly/"
+        - "/etc/cron.monthly/"
+        - "/etc/cron.weekly/"
+        - "/etc/exim4/"
+        - "/etc/fish/"
+        - "/etc/init.d/"
+        - "/etc/init/"
+        - "/etc/modprobe.d/"
+        - "/etc/network/"
+        - "/etc/pacman.d/"
+        - "/etc/postfix/"
+        - "/etc/profile.d/"
+        - "/etc/rc.d/"
+        - "/etc/selinux/"
+        - "/etc/ssh/sshd_config.d/"
+        - "/etc/sudoers.d/"
+        - "/etc/sysconfig/network"
+        - "/etc/systemd/"
+        - "/etc/systemd/system-generators/"
+        - "/etc/systemd/user-generators/"
+        - "/etc/udev/rules.d/"
+        - "/etc/update-motd.d/" # noisy
+        - "/etc/xdg/autostart/"
+        - "/etc/yum/pluginconf.d/"
+        - "/etc/zsh/"
+        - "/lib/systemd/"
+        - "/lib/systemd/system-generators/"
+        - "/usr/lib/systemd/"
+        - "/usr/lib/update-notifier/"
+        - "/usr/local/lib/systemd/"
+        - "/usr/local/lib/systemd/system-generators/"
+        - "/usr/local/lib/systemd/user-generators/"
+        - "/usr/share/autostart/"
+        - "/var/spool/cron/"
+      matchReturnArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "0"

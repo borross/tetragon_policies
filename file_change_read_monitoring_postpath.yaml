@@ -1,0 +1,57 @@
+# Tracing: file changing and reading in critical Linux paths endings (from AuditD config Neo23x0 + KUMA Community)
+
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: "file-change-read-monitoring-filtered-endingpath"
+spec:
+  kprobes:
+  - call: "security_file_permission"
+    syscall: false
+    return: true
+    args:
+    - index: 0
+      type: "file" # (struct file *) used for getting the path
+    - index: 1
+      type: "int" # 0x04 is MAY_READ, 0x02 is MAY_WRITE
+    returnArg:
+      index: 0
+      type: "int"
+    returnArgAction: "Post"
+    selectors:
+    - matchArgs:
+      - index: 0
+        operator: "Postfix"
+        values:
+        - ".config/systemd/user"
+        - ".local/share/systemd/user"
+        - ".bashrc"
+        - ".bash_profile"
+        - ".bash_login"
+        - ".profile"
+        - ".bash_logout"
+        - ".config/autostart"
+        - ".local/share/autostart"
+        - ".config/autostart-scripts/"
+      - index: 1
+        operator: "Equal"
+        values:
+        - "2" # MAY_WRITE
+    - matchArgs:
+      - index: 0
+        operator: "Postfix"
+        values:
+        - ".config/systemd/user"
+        - ".local/share/systemd/user"
+        - ".bashrc"
+        - ".bash_profile"
+        - ".bash_login"
+        - ".profile"
+        - ".bash_logout"
+        - ".config/autostart"
+        - ".local/share/autostart"
+        - ".config/autostart-scripts/"
+      - index: 1
+        operator: "Equal"
+        values:
+        - "4" # MAY_READ
